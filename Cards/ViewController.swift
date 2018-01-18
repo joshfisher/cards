@@ -69,7 +69,7 @@ class ViewController: UIViewController {
     
     @objc func insertNewCard() {
         var model = cardsView.model
-        let index = model.index + 1
+        let index = min(model.index + 1, model.cardModels.count)
         model.cardModels.insert(CardModel.plain(uid: UUID(), palette: Palette.h), at: index)
         model.index = index
         cardsView.setModel(model, animated: true)
@@ -80,7 +80,7 @@ class ViewController: UIViewController {
         
         var model = cardsView.model
         model.cardModels.remove(at: model.index)
-        model.index = min(model.index, model.cardModels.count - 1)
+        model.index = max(model.index - 1, 0)
         cardsView.setModel(model, animated: true)
     }
     

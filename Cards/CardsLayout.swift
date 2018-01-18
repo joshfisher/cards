@@ -18,48 +18,39 @@ class CardsLayout: UICollectionViewLayout {
 
     private var contentSize = CGSize.zero
     
-    private var latestAttributes: [UICollectionViewLayoutAttributes] = []
-    private var previousAttributes: [UICollectionViewLayoutAttributes] = []
-
     private var insertingIndexes = Set<IndexPath>()
     private var deletingIndexes = Set<IndexPath>()
     
     private var previousCenter: CGFloat = 0
 
     override func prepare() {
-        previousAttributes = latestAttributes
-        latestAttributes = []
-
         guard let collectionView = collectionView, collectionView.hasContent else { return }
 
-        for index in 0 ..< collectionView.numberOfItems(inSection: 0) {
-            let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: index, section: 0))
-
-            attributes.frame = CGRect(origin: CGPoint(x: CGFloat(index) * collectionView.bounds.width, y: 0),
-                                      size: collectionView.bounds.size)
-            
-            latestAttributes.append(attributes)
-        }
-
-        if let firstRect = latestAttributes.first?.frame {
-            let contentRect = latestAttributes.dropFirst().reduce(firstRect, { $0.union($1.frame) })
-            contentSize = contentRect.size
-        }
+        let maxOffset = collectionView.numberOfItems(inSection: 0)
+        contentSize = CGSize(width: collectionView.frame.width * CGFloat(maxOffset),
+                             height: collectionView.frame.height)
     }
 
     override func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
-        return latestAttributes.map {
-            adjustAttributes($0, relativeTo: collectionView!.bounds.center.x)
+        return (0 ..< collectionView!.numberOfItems(inSection: 0)).map {
+            return adjustAttributes(attributes(at: $0), relativeTo: collectionView!.bounds.center.x)
         }
     }
 
     // returns nil if indexPath is out of bounds of the dataSource
     override func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        return adjustAttributes(latestAttributes[indexPath.item], relativeTo: collectionView!.bounds.center.x)
+        return adjustAttributes(attributes(at: indexPath.item), relativeTo: collectionView!.bounds.center.x)
     }
-
+    
     override var collectionViewContentSize: CGSize {
         return contentSize
+    }
+    
+    private func attributes(at index: Int) -> UICollectionViewLayoutAttributes {
+        let attribs = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: index, section: 0))
+        attribs.frame = CGRect(origin: CGPoint(x: CGFloat(index) * collectionView!.frame.width, y: 0),
+                               size: collectionView!.frame.size)
+        return attribs
     }
 
     // adjustments are made based on proximity to center of collectionView.bounds
@@ -110,14 +101,15 @@ class CardsLayout: UICollectionViewLayout {
     
     override func finalizeCollectionViewUpdates() {
         insertingIndexes.removeAll()
+        deletingIndexes.removeAll()
     }
     
     override func initialLayoutAttributesForAppearingItem(at itemIndexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        let attribs = adjustAttributes(latestAttributes[itemIndexPath.item], relativeTo: collectionView!.bounds.midX)
+        let attribs = adjustAttributes(attributes(at: itemIndexPath.item), relativeTo: collectionView!.bounds.midX)
 
         if insertingIndexes.contains(itemIndexPath) {
-            // new card, start it off the bottom of the screen
-            attribs.frame.origin.x -= collectionView!.frame.width
+            // new card, start it off the bottom of the screen, compensating for offset change
+            attribs.frame.origin.x += (previousCenter - collectionView!.bounds.midX)
             attribs.frame.origin.y += attribs.frame.height / 2
         }
         
@@ -126,7 +118,15 @@ class CardsLayout: UICollectionViewLayout {
     
     override func finalLayoutAttributesForDisappearingItem(at itemIndexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         // adjust side cards relative to the previous contentOffset so their transforms will be correct
-        return adjustAttributes(previousAttributes[itemIndexPath.item], relativeTo: previousCenter)
+        let attribs = adjustAttributes(attributes(at: itemIndexPath.item), relativeTo: previousCenter)
+        
+        if deletingIndexes.contains(itemIndexPath) {
+            // slide disappearing cards straight down, compensating for offset change
+            attribs.frame.origin.x += (collectionView!.bounds.midX - previousCenter)
+            attribs.frame.origin.y += attribs.frame.height / 2
+        }
+        
+        return attribs
     }
     
     /*
@@ -140,7 +140,7 @@ class CardsLayout: UICollectionViewLayout {
             return proposedContentOffset
         }
         
-        previousCenter = proposedContentOffset.y + collectionView.bounds.midX
+        previousCenter = collectionView.bounds.midX
 
         let newContentOffset = collectionView.frame.width * CGFloat(centerIndex)
         return CGPoint(x: newContentOffset, y: 0)
