@@ -1,0 +1,12 @@
+PODS:
+  - Dwifft (0.7)
+
+DEPENDENCIES:
+  - Dwifft (= 0.7)
+
+SPEC CHECKSUMS:
+  Dwifft: bb97bff975a5f5e62a7492dc29463e9be47dc121
+
+PODFILE CHECKSUM: e6077cc02a5238c7b58fbe8024deede1eda70eac
+
+COCOAPODS: 1.3.1
