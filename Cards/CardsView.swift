@@ -64,15 +64,12 @@ class CardsView: PassThroughView {
             changeStop(animated: animated)
         }
         
-        if (_model.index != oldValue.index) {
-            layout.centerIndex = _model.index
-            // the layout will propose the targetContentOffset when its invalidated
-            // to cancel that animation, set the contentOffset immediately
-//            if !animated {
-//                let newContentOffset = collectionView.frame.width * CGFloat(_model.index)
-//                collectionView.setContentOffset(CGPoint(x: newContentOffset, y: 0), animated: false)
-//            }
-        }
+        // TODO: animate scrolling by changing centerIndex
+        // this doesn't invalidateLayout() atm, but could in the future
+        // only setting if _model.index has changed breaks this tho bc
+        // layout doesn't update centerIndex as it gets scrolled, while _model.index does
+        // when the get out of sync the layout.centerIndex won't get updated correctly
+        layout.centerIndex = _model.index
         
         let data = SectionedValues([("only section", _model.cardModels)])
         

@@ -85,6 +85,10 @@ class ViewController: UIViewController {
     }
     
     @objc func moveCardFromEnd() {
-        
+        var model = cardsView.model
+        let takeIndex = max(0, min(model.cardModels.count - 1, model.index + 1))
+        let cardModel = model.cardModels.remove(at: takeIndex)
+        model.cardModels.insert(cardModel, at: model.index)
+        cardsView.setModel(model, animated: true)
     }
 }
